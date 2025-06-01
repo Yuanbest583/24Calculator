@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>24点计算器</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .calculator {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .input-container {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .number-input {
+            width: 60px;
+            height: 60px;
+            font-size: 24px;
+            text-align: center;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+        }
+        .number-input:focus {
+            border-color: #4CAF50;
+            outline: none;
+        }
+        .calculate-btn {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .calculate-btn:hover {
+            background-color: #45a049;
+        }
+        .result-container {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            min-height: 100px;
+            background-color: #f9f9f9;
+        }
+        .result-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        .solution {
+            margin-bottom: 8px;
+            padding: 8px;
+            background-color: #e8f5e9;
+            border-radius: 4px;
+        }
+        .no-solution {
+            color: #f44336;
+            font-style: italic;
+        }
+        .error {
+            color: #f44336;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>24点计算器</h1>
+    <div class="calculator">
+        <div class="input-container">
+            <input type="number" class="number-input" min="1" max="13" placeholder="数字1">
+            <input type="number" class="number-input" min="1" max="13" placeholder="数字2">
+            <input type="number" class="number-input" min="1" max="13" placeholder="数字3">
+            <input type="number" class="number-input" min="1" max="13" placeholder="数字4">
+            <button class="calculate-btn">计算</button>
+        </div>
+        <div class="error" id="error-message"></div>
+        <div class="result-container">
+            <div class="result-title">计算结果：</div>
+            <div id="result-content"></div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const inputs = document.querySelectorAll('.number-input');
+            const calculateBtn = document.querySelector('.calculate-btn');
+            const resultContent = document.getElementById('result-content');
+            const errorMessage = document.getElementById('error-message');
+            
+            calculateBtn.addEventListener('click', calculate24);
+            
+            // 也可以监听回车键
+            inputs.forEach(input => {
+                input.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        calculate24();
+                    }
+                });
+            });
+            
+            function calculate24() {
+                errorMessage.textContent = '';
+                resultContent.innerHTML = '';
+                
+                const numbers = [];
+                let isValid = true;
+                
+                // 获取输入并验证
+                inputs.forEach(input => {
+                    const num = parseInt(input.value);
+                    if (isNaN(num) || num < 1 || num > 13) {
+                        isValid = false;
+                        input.style.borderColor = '#f44336';
+                    } else {
+                        numbers.push(num);
+                        input.style.borderColor = '#ddd';
+                    }
+                });
+                
+                if (!isValid) {
+                    errorMessage.textContent = '请输入1-13之间的有效数字！';
+                    return;
+                }
+                
+                // 计算24点
+                const solutions = solve24(numbers);
+                
+                // 显示结果
+                if (solutions.length === 0) {
+                    resultContent.innerHTML = '<div class="no-solution">没有找到可行的方案。</div>';
+                } else {
+                    solutions.forEach(solution => {
+                        const div = document.createElement('div');
+                        div.className = 'solution';
+                        div.textContent = solution;
+                        resultContent.appendChild(div);
+                    });
+                }
+            }
+            
+            // 24点计算函数
+            function solve24(numbers) {
+                const solutions = new Set();
+                const ops = ['+', '-', '*', '/'];
+                
+                // 生成所有排列
+                function permute(arr, temp = []) {
+                    if (arr.length === 0) {
+                        // 对于每个排列，尝试所有可能的运算符组合和括号组合
+                        for (let i = 0; i < 4; i++) {
+                            for (let j = 0; j < 4; j++) {
+                                for (let k = 0; k < 4; k++) {
+                                    // 五种不同的括号组合方式
+                                    const expressions = [
+                                        `((${temp[0]}${ops[i]}${temp[1]})${ops[j]}${temp[2]})${ops[k]}${temp[3]}`, // ((a op b) op c) op d
+                                        `(${temp[0]}${ops[i]}(${temp[1]}${ops[j]}${temp[2]}))${ops[k]}${temp[3]}`, // (a op (b op c)) op d
+                                        `${temp[0]}${ops[i]}((${temp[1]}${ops[j]}${temp[2]})${ops[k]}${temp[3]})`, // a op ((b op c) op d)
+                                        `${temp[0]}${ops[i]}(${temp[1]}${ops[j]}(${temp[2]}${ops[k]}${temp[3]}))`, // a op (b op (c op d))
+                                        `(${temp[0]}${ops[i]}${temp[1]})${ops[j]}(${temp[2]}${ops[k]}${temp[3]})`  // (a op b) op (c op d)
+                                    ];
+                                    
+                                    for (const expr of expressions) {
+                                        try {
+                                            // 使用浮点数比较，避免精度问题
+                                            if (Math.abs(eval(expr) - 24) < 0.000001) {
+                                                // 标准化表达式，去除多余的括号
+                                                const normalized = normalizeExpression(expr);
+                                                if (!solutions.has(normalized)) {
+                                                    solutions.add(normalized);
+                                                }
+                                            }
+                                        } catch (e) {
+                                            // 忽略除以零等错误
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        return;
+                    }
+                    
+                    for (let i = 0; i < arr.length; i++) {
+                        const curr = arr.slice();
+                        const next = curr.splice(i, 1);
+                        permute(curr.slice(), temp.concat(next));
+                    }
+                }
+                
+                permute(numbers);
+                return Array.from(solutions);
+            }
+            
+            // 标准化表达式，去除多余的括号
+            function normalizeExpression(expr) {
+                // 这里简化处理，实际可能需要更复杂的解析
+                return expr
+                    .replace(/\((\d+)\)/g, '$1') // 去除数字周围的括号
+                    .replace(/\(\((.*?)\)\)/g, '($1)'); // 减少嵌套括号
+            }
+        });
+    </script>
+</body>
+</html>
