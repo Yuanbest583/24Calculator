@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>24点计算器</title>
+    <title>24Calculator</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -79,22 +79,28 @@
             color: #f44336;
             margin-bottom: 10px;
         }
+        .stats {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #666;
+        }
     </style>
 </head>
 <body>
-    <h1>24点计算器</h1>
+    <h1>24Calculator</h1>
     <div class="calculator">
         <div class="input-container">
-            <input type="number" class="number-input" min="1" max="13" placeholder="数字1">
-            <input type="number" class="number-input" min="1" max="13" placeholder="数字2">
-            <input type="number" class="number-input" min="1" max="13" placeholder="数字3">
-            <input type="number" class="number-input" min="1" max="13" placeholder="数字4">
+            <input type="number" class="number-input" min="1" max="13" placeholder="">
+            <input type="number" class="number-input" min="1" max="13" placeholder="">
+            <input type="number" class="number-input" min="1" max="13" placeholder="">
+            <input type="number" class="number-input" min="1" max="13" placeholder="">
             <button class="calculate-btn">计算</button>
         </div>
         <div class="error" id="error-message"></div>
         <div class="result-container">
             <div class="result-title">计算结果：</div>
             <div id="result-content"></div>
+            <div class="stats" id="stats"></div>
         </div>
     </div>
 
@@ -104,10 +110,10 @@
             const calculateBtn = document.querySelector('.calculate-btn');
             const resultContent = document.getElementById('result-content');
             const errorMessage = document.getElementById('error-message');
+            const statsElement = document.getElementById('stats');
             
             calculateBtn.addEventListener('click', calculate24);
             
-            // 也可以监听回车键
             inputs.forEach(input => {
                 input.addEventListener('keypress', function(e) {
                     if (e.key === 'Enter') {
@@ -119,11 +125,11 @@
             function calculate24() {
                 errorMessage.textContent = '';
                 resultContent.innerHTML = '';
+                statsElement.textContent = '';
                 
                 const numbers = [];
                 let isValid = true;
                 
-                // 获取输入并验证
                 inputs.forEach(input => {
                     const num = parseInt(input.value);
                     if (isNaN(num) || num < 1 || num > 13) {
@@ -140,10 +146,11 @@
                     return;
                 }
                 
-                // 计算24点
+                const startTime = performance.now();
                 const solutions = solve24(numbers);
+                const endTime = performance.now();
+                const timeTaken = (endTime - startTime).toFixed(2);
                 
-                // 显示结果
                 if (solutions.length === 0) {
                     resultContent.innerHTML = '<div class="no-solution">没有找到可行的方案。</div>';
                 } else {
@@ -154,36 +161,36 @@
                         resultContent.appendChild(div);
                     });
                 }
+                
+                statsElement.textContent = `共找到 ${solutions.length} 个唯一解，耗时 ${timeTaken} 毫秒`;
             }
             
-            // 24点计算函数
             function solve24(numbers) {
                 const solutions = new Set();
                 const ops = ['+', '-', '*', '/'];
+                const seen = new Set();
                 
-                // 生成所有排列
                 function permute(arr, temp = []) {
                     if (arr.length === 0) {
-                        // 对于每个排列，尝试所有可能的运算符组合和括号组合
                         for (let i = 0; i < 4; i++) {
                             for (let j = 0; j < 4; j++) {
                                 for (let k = 0; k < 4; k++) {
-                                    // 五种不同的括号组合方式
                                     const expressions = [
-                                        `((${temp[0]}${ops[i]}${temp[1]})${ops[j]}${temp[2]})${ops[k]}${temp[3]}`, // ((a op b) op c) op d
-                                        `(${temp[0]}${ops[i]}(${temp[1]}${ops[j]}${temp[2]}))${ops[k]}${temp[3]}`, // (a op (b op c)) op d
-                                        `${temp[0]}${ops[i]}((${temp[1]}${ops[j]}${temp[2]})${ops[k]}${temp[3]})`, // a op ((b op c) op d)
-                                        `${temp[0]}${ops[i]}(${temp[1]}${ops[j]}(${temp[2]}${ops[k]}${temp[3]}))`, // a op (b op (c op d))
-                                        `(${temp[0]}${ops[i]}${temp[1]})${ops[j]}(${temp[2]}${ops[k]}${temp[3]})`  // (a op b) op (c op d)
+                                        `((${temp[0]}${ops[i]}${temp[1]})${ops[j]}${temp[2]})${ops[k]}${temp[3]}`,
+                                        `(${temp[0]}${ops[i]}(${temp[1]}${ops[j]}${temp[2]}))${ops[k]}${temp[3]}`,
+                                        `${temp[0]}${ops[i]}((${temp[1]}${ops[j]}${temp[2]})${ops[k]}${temp[3]})`,
+                                        `${temp[0]}${ops[i]}(${temp[1]}${ops[j]}(${temp[2]}${ops[k]}${temp[3]}))`,
+                                        `(${temp[0]}${ops[i]}${temp[1]})${ops[j]}(${temp[2]}${ops[k]}${temp[3]})`
                                     ];
                                     
                                     for (const expr of expressions) {
                                         try {
-                                            // 使用浮点数比较，避免精度问题
                                             if (Math.abs(eval(expr) - 24) < 0.000001) {
-                                                // 标准化表达式，去除多余的括号
                                                 const normalized = normalizeExpression(expr);
-                                                if (!solutions.has(normalized)) {
+                                                const key = getCanonicalKey(normalized);
+                                                
+                                                if (!seen.has(key)) {
+                                                    seen.add(key);
                                                     solutions.add(normalized);
                                                 }
                                             }
@@ -205,15 +212,190 @@
                 }
                 
                 permute(numbers);
-                return Array.from(solutions);
+                return Array.from(solutions).sort();
             }
             
-            // 标准化表达式，去除多余的括号
+            // 标准化表达式，去除不必要的括号
             function normalizeExpression(expr) {
-                // 这里简化处理，实际可能需要更复杂的解析
-                return expr
-                    .replace(/\((\d+)\)/g, '$1') // 去除数字周围的括号
-                    .replace(/\(\((.*?)\)\)/g, '($1)'); // 减少嵌套括号
+                const tokens = tokenize(expr);
+                const tree = parse(tokens);
+                return formatTree(tree);
+            }
+            
+            // 获取表达式的规范键，用于去除所有交换律导致的重复
+            function getCanonicalKey(expr) {
+                const tokens = tokenize(expr);
+                const tree = parse(tokens);
+                return canonicalizeTree(tree);
+            }
+            
+            // 将表达式分解为标记
+            function tokenize(expr) {
+                const tokens = [];
+                let current = '';
+                
+                for (const char of expr) {
+                    if ('()+-*/'.includes(char)) {
+                        if (current) {
+                            tokens.push(current);
+                            current = '';
+                        }
+                        tokens.push(char);
+                    } else if (!isNaN(char) || char === '.') {
+                        current += char;
+                    }
+                }
+                
+                if (current) {
+                    tokens.push(current);
+                }
+                
+                return tokens;
+            }
+            
+            // 解析标记为语法树
+            function parse(tokens) {
+                const output = [];
+                const operators = [];
+                
+                const precedence = {
+                    '+': 1,
+                    '-': 1,
+                    '*': 2,
+                    '/': 2
+                };
+                
+                for (const token of tokens) {
+                    if (!isNaN(token)) {
+                        output.push({ type: 'number', value: parseFloat(token) });
+                    } else if ('+-*/'.includes(token)) {
+                        while (operators.length > 0 && 
+                               operators[operators.length - 1] !== '(' &&
+                               precedence[operators[operators.length - 1]] >= precedence[token]) {
+                            output.push({ type: 'operator', value: operators.pop() });
+                        }
+                        operators.push(token);
+                    } else if (token === '(') {
+                        operators.push(token);
+                    } else if (token === ')') {
+                        while (operators.length > 0 && operators[operators.length - 1] !== '(') {
+                            output.push({ type: 'operator', value: operators.pop() });
+                        }
+                        operators.pop(); // 弹出 '('
+                    }
+                }
+                
+                while (operators.length > 0) {
+                    output.push({ type: 'operator', value: operators.pop() });
+                }
+                
+                // 构建语法树
+                const stack = [];
+                for (const token of output) {
+                    if (token.type === 'number') {
+                        stack.push(token);
+                    } else {
+                        const right = stack.pop();
+                        const left = stack.pop();
+                        stack.push({
+                            type: 'operation',
+                            operator: token.value,
+                            left,
+                            right
+                        });
+                    }
+                }
+                
+                return stack[0];
+            }
+            
+            // 格式化语法树为表达式，去除不必要的括号
+            function formatTree(node, parentPrec = 0) {
+                if (node.type === 'number') {
+                    return node.value.toString();
+                }
+                
+                const precedence = {
+                    '+': 1,
+                    '-': 1,
+                    '*': 2,
+                    '/': 2
+                };
+                
+                const currentPrec = precedence[node.operator];
+                
+                const leftStr = formatTree(node.left, currentPrec);
+                const rightStr = formatTree(node.right, currentPrec + (node.operator === '-' || node.operator === '/' ? 1 : 0));
+                
+                let expr = '';
+                
+                // 处理左子表达式
+                if (node.left.type === 'operation' && precedence[node.left.operator] < currentPrec) {
+                    expr += `(${leftStr})`;
+                } else {
+                    expr += leftStr;
+                }
+                
+                expr += node.operator;
+                
+                // 处理右子表达式
+                if (node.right.type === 'operation' && 
+                    (precedence[node.right.operator] < currentPrec || 
+                     (node.operator === '-' && precedence[node.right.operator] <= currentPrec) ||
+                     (node.operator === '/' && precedence[node.right.operator] <= currentPrec) ||
+                     (node.operator === '*' && node.right.operator === '/') ||
+                     (node.operator === '+' && node.right.operator === '-'))) {
+                    expr += `(${rightStr})`;
+                } else {
+                    expr += rightStr;
+                }
+                
+                if (currentPrec < parentPrec) {
+                    return `(${expr})`;
+                }
+                
+                return expr;
+            }
+            
+            // 规范化语法树，去除所有交换律导致的重复
+            function canonicalizeTree(node) {
+                if (node.type === 'number') {
+                    return node.value.toString();
+                }
+                
+                const leftKey = canonicalizeTree(node.left);
+                const rightKey = canonicalizeTree(node.right);
+                
+                // 对于可交换的运算符，统一顺序
+                if (node.operator === '+' || node.operator === '*') {
+                    const keys = [leftKey, rightKey].sort();
+                    return `${node.operator}(${keys[0]},${keys[1]})`;
+                }
+                
+                // 对于减法和除法，考虑特殊情况
+                if (node.operator === '-') {
+                    // a-(b-c) 与 (a-b)+c 可能等价
+                    if (node.right.type === 'operation' && node.right.operator === '-') {
+                        const a = leftKey;
+                        const b = canonicalizeTree(node.right.left);
+                        const c = canonicalizeTree(node.right.right);
+                        const altKey = `+(${a}-${b},${c})`;
+                        return `-(${a},-(${b},${c}))|${altKey}`;
+                    }
+                }
+                
+                if (node.operator === '/') {
+                    // a/(b/c) 与 (a*c)/b 可能等价
+                    if (node.right.type === 'operation' && node.right.operator === '/') {
+                        const a = leftKey;
+                        const b = canonicalizeTree(node.right.left);
+                        const c = canonicalizeTree(node.right.right);
+                        const altKey = `/(*(${a},${c}),${b})`;
+                        return `/(${a},/(${b},${c}))|${altKey}`;
+                    }
+                }
+                
+                return `${node.operator}(${leftKey},${rightKey})`;
             }
         });
     </script>
