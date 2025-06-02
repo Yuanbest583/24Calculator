@@ -1,4 +1,4 @@
-# 24-Point Game Calculator (Ultimate Deduplication Version)
+# 24 Game Solver
 
 ## Overview
 
