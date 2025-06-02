@@ -94,11 +94,11 @@
             <input type="number" class="number-input" min="1" max="13" placeholder="">
             <input type="number" class="number-input" min="1" max="13" placeholder="">
             <input type="number" class="number-input" min="1" max="13" placeholder="">
-            <button class="calculate-btn">计算</button>
+            <button class="calculate-btn">CALC</button>
         </div>
         <div class="error" id="error-message"></div>
         <div class="result-container">
-            <div class="result-title">计算结果：</div>
+            <div class="result-title">Solution：</div>
             <div id="result-content"></div>
             <div class="stats" id="stats"></div>
         </div>
@@ -142,7 +142,7 @@
                 });
                 
                 if (!isValid) {
-                    errorMessage.textContent = '请输入1-13之间的有效数字！';
+                    errorMessage.textContent = 'Please enter a valid number between 1-13.';
                     return;
                 }
                 
@@ -152,7 +152,7 @@
                 const timeTaken = (endTime - startTime).toFixed(2);
                 
                 if (solutions.length === 0) {
-                    resultContent.innerHTML = '<div class="no-solution">没有找到可行的方案。</div>';
+                    resultContent.innerHTML = '<div class="no-solution">There is no solution.</div>';
                 } else {
                     // 对解进行排序：先按长度，再按字母顺序
                     const sortedSolutions = solutions.sort((a, b) => {
@@ -168,7 +168,7 @@
                     });
                 }
                 
-                statsElement.textContent = `共找到 ${solutions.length} 个唯一解，耗时 ${timeTaken} 毫秒`;
+                statsElement.textContent = `Found ${solutions.length} solutions in total , taking  ${timeTaken} ms`;
             }
             
             function solve24(numbers) {
