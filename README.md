@@ -71,7 +71,7 @@ Solution：
 ((3+5-2))*4 = 24
 2*((3+4+5)) = 24
 ((3+(5-2)))*4 = 24
-Found 4 solutions in total , taking 102.50 ms
+Found 4 solutions in total , taking 18.90 ms
 ```
 
 ## Advanced Features
