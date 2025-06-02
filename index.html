@@ -154,10 +154,16 @@
                 if (solutions.length === 0) {
                     resultContent.innerHTML = '<div class="no-solution">没有找到可行的方案。</div>';
                 } else {
-                    solutions.forEach(solution => {
+                    // 对解进行排序：先按长度，再按字母顺序
+                    const sortedSolutions = solutions.sort((a, b) => {
+                        if (a.length !== b.length) return a.length - b.length;
+                        return a.localeCompare(b);
+                    });
+                    
+                    sortedSolutions.forEach(solution => {
                         const div = document.createElement('div');
                         div.className = 'solution';
-                        div.textContent = solution;
+                        div.textContent = solution + " = 24";
                         resultContent.appendChild(div);
                     });
                 }
@@ -166,9 +172,8 @@
             }
             
             function solve24(numbers) {
-                const solutions = new Set();
+                const solutions = new Map(); // 使用Map存储解，键为规范化后的表达式
                 const ops = ['+', '-', '*', '/'];
-                const seen = new Set();
                 
                 function permute(arr, temp = []) {
                     if (arr.length === 0) {
@@ -187,11 +192,10 @@
                                         try {
                                             if (Math.abs(eval(expr) - 24) < 0.000001) {
                                                 const normalized = normalizeExpression(expr);
-                                                const key = getCanonicalKey(normalized);
+                                                const key = getCanonicalForm(normalized);
                                                 
-                                                if (!seen.has(key)) {
-                                                    seen.add(key);
-                                                    solutions.add(normalized);
+                                                if (!solutions.has(key)) {
+                                                    solutions.set(key, normalized);
                                                 }
                                             }
                                         } catch (e) {
@@ -212,21 +216,138 @@
                 }
                 
                 permute(numbers);
-                return Array.from(solutions).sort();
+                return Array.from(solutions.values());
             }
             
-            // 标准化表达式，去除不必要的括号
+            // 获取表达式的规范形式，彻底去重
+            function getCanonicalForm(expr) {
+                const tokens = tokenize(expr);
+                const tree = parse(tokens);
+                const canonicalTree = makeCanonical(tree);
+                return treeToString(canonicalTree);
+            }
+            
+            // 将表达式树转换为规范形式
+            function makeCanonical(node) {
+                if (node.type === 'number') {
+                    return node;
+                }
+                
+                // 先规范化子节点
+                const left = makeCanonical(node.left);
+                const right = makeCanonical(node.right);
+                
+                // 处理可交换运算符
+                if (node.operator === '+' || node.operator === '*') {
+                    // 比较左右子树的规范字符串表示
+                    const leftStr = treeToString(left);
+                    const rightStr = treeToString(right);
+                    
+                    if (leftStr > rightStr) {
+                        // 交换左右子树，确保顺序一致
+                        return {
+                            type: 'operation',
+                            operator: node.operator,
+                            left: right,
+                            right: left
+                        };
+                    }
+                }
+                
+                // 处理减法和除法的特殊情况
+                if (node.operator === '-') {
+                    // 将a-(b-c)转换为(a-b)+c
+                    if (right.type === 'operation' && right.operator === '-') {
+                        return makeCanonical({
+                            type: 'operation',
+                            operator: '+',
+                            left: {
+                                type: 'operation',
+                                operator: '-',
+                                left: left,
+                                right: right.left
+                            },
+                            right: right.right
+                        });
+                    }
+                }
+                
+                if (node.operator === '/') {
+                    // 将a/(b/c)转换为(a*c)/b
+                    if (right.type === 'operation' && right.operator === '/') {
+                        return makeCanonical({
+                            type: 'operation',
+                            operator: '/',
+                            left: {
+                                type: 'operation',
+                                operator: '*',
+                                left: left,
+                                right: right.right
+                            },
+                            right: right.left
+                        });
+                    }
+                }
+                
+                // 处理连续相同运算符
+                if (node.operator === '+' || node.operator === '*') {
+                    // 收集所有连续的相同运算符项
+                    const terms = [];
+                    collectTerms(node, node.operator, terms);
+                    
+                    if (terms.length > 2) {
+                        // 对项进行排序
+                        terms.sort((a, b) => treeToString(a).localeCompare(treeToString(b)));
+                        
+                        // 重新构建左结合的运算树
+                        let newTree = terms[0];
+                        for (let i = 1; i < terms.length; i++) {
+                            newTree = {
+                                type: 'operation',
+                                operator: node.operator,
+                                left: newTree,
+                                right: terms[i]
+                            };
+                        }
+                        return newTree;
+                    }
+                }
+                
+                return {
+                    type: node.type,
+                    operator: node.operator,
+                    left: left,
+                    right: right
+                };
+            }
+            
+            // 收集连续的相同运算符项
+            function collectTerms(node, op, terms) {
+                if (node.type === 'operation' && node.operator === op) {
+                    collectTerms(node.left, op, terms);
+                    collectTerms(node.right, op, terms);
+                } else {
+                    terms.push(node);
+                }
+            }
+            
+            // 将语法树转换为字符串
+            function treeToString(node) {
+                if (node.type === 'number') {
+                    return node.value.toString();
+                }
+                
+                const leftStr = treeToString(node.left);
+                const rightStr = treeToString(node.right);
+                
+                return `${node.operator}(${leftStr},${rightStr})`;
+            }
+            
+            // 标准化表达式显示
             function normalizeExpression(expr) {
                 const tokens = tokenize(expr);
                 const tree = parse(tokens);
                 return formatTree(tree);
-            }
-            
-            // 获取表达式的规范键，用于去除所有交换律导致的重复
-            function getCanonicalKey(expr) {
-                const tokens = tokenize(expr);
-                const tree = parse(tokens);
-                return canonicalizeTree(tree);
             }
             
             // 将表达式分解为标记
@@ -309,7 +430,7 @@
                 return stack[0];
             }
             
-            // 格式化语法树为表达式，去除不必要的括号
+            // 格式化语法树为表达式
             function formatTree(node, parentPrec = 0) {
                 if (node.type === 'number') {
                     return node.value.toString();
@@ -357,45 +478,15 @@
                 return expr;
             }
             
-            // 规范化语法树，去除所有交换律导致的重复
-            function canonicalizeTree(node) {
-                if (node.type === 'number') {
-                    return node.value.toString();
+            // 检查括号是否匹配
+            function hasMatchingParentheses(expr) {
+                let balance = 0;
+                for (const char of expr) {
+                    if (char === '(') balance++;
+                    if (char === ')') balance--;
+                    if (balance < 0) return false;
                 }
-                
-                const leftKey = canonicalizeTree(node.left);
-                const rightKey = canonicalizeTree(node.right);
-                
-                // 对于可交换的运算符，统一顺序
-                if (node.operator === '+' || node.operator === '*') {
-                    const keys = [leftKey, rightKey].sort();
-                    return `${node.operator}(${keys[0]},${keys[1]})`;
-                }
-                
-                // 对于减法和除法，考虑特殊情况
-                if (node.operator === '-') {
-                    // a-(b-c) 与 (a-b)+c 可能等价
-                    if (node.right.type === 'operation' && node.right.operator === '-') {
-                        const a = leftKey;
-                        const b = canonicalizeTree(node.right.left);
-                        const c = canonicalizeTree(node.right.right);
-                        const altKey = `+(${a}-${b},${c})`;
-                        return `-(${a},-(${b},${c}))|${altKey}`;
-                    }
-                }
-                
-                if (node.operator === '/') {
-                    // a/(b/c) 与 (a*c)/b 可能等价
-                    if (node.right.type === 'operation' && node.right.operator === '/') {
-                        const a = leftKey;
-                        const b = canonicalizeTree(node.right.left);
-                        const c = canonicalizeTree(node.right.right);
-                        const altKey = `/(*(${a},${c}),${b})`;
-                        return `/(${a},/(${b},${c}))|${altKey}`;
-                    }
-                }
-                
-                return `${node.operator}(${leftKey},${rightKey})`;
+                return balance === 0;
             }
         });
     </script>
