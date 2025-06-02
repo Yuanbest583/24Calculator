@@ -1,93 +1,100 @@
-# 24点计算器 - README
+# 24-Point Game Calculator (Ultimate Deduplication Version)
 
-## 项目简介
+## Overview
 
-这是一个高度优化的24点游戏计算器，使用纯HTML、CSS和JavaScript实现。用户输入四个1-13之间的数字后，程序会智能枚举所有可能的运算组合，找出能够通过加、减、乘、除运算得到24的表达式，并自动去除所有数学等价重复解。
+This is an advanced web-based 24-point game calculator implemented with pure HTML, CSS, and JavaScript. After users input four numbers between 1-13, the program intelligently enumerates all possible arithmetic combinations to find expressions that evaluate to 24, while automatically removing all mathematically equivalent duplicate solutions.
 
-## 核心优化特性
+## Key Features
 
-✅ **完全去除重复解**  
-- 处理交换律导致的重复（如3+4+5与5+4+3）
-- 处理结合律导致的重复（如(1+2)+3与1+(2+3)）
-- 处理混合运算等价情况（如3+5-2与3-2+5）
+### Complete Mathematical Deduplication
+- Handles commutative law duplicates (e.g., 3+4+5 vs 5+4+3)
+- Handles associative law duplicates (e.g., (1+2)+3 vs 1+(2+3))
+- Handles mixed operation equivalents (e.g., 3+5-2 vs 3-2+5)
+- Merges all bracket variation cases (e.g., ((3+(5-2)))*4 vs ((3+5-2))*4)
 
-✅ **智能表达式简化**  
-- 自动去除不必要的括号
-- 保持数学表达式的自然形式
-- 标准化表达式显示格式
+### Intelligent Expression Simplification
+- Automatically removes unnecessary parentheses
+- Maintains natural mathematical expression forms
+- Displays the most concise expression representation
 
-✅ **性能优化**  
-- 高效的数据结构存储
-- 快速重复检测算法
-- 计算耗时统计显示
+### Performance Optimizations
+- Efficient data structures
+- Fast duplicate detection algorithm
+- Computation time statistics display
 
-## 使用说明
+## How to Use
 
-1. **输入数字**：在四个输入框中分别输入1-13之间的整数
-2. **开始计算**：点击"计算"按钮或按Enter键
-3. **查看结果**：
-   - 所有唯一解会清晰列出
-   - 无解时显示提示信息
-   - 底部显示找到的解数量和计算耗时
+1. **Input Numbers**: Enter four integers between 1-13 in the input boxes
+2. **Calculate**: Click the "Calculate" button or press Enter
+3. **View Results**:
+   - All unique solutions will be clearly listed
+   - "No solution found" will display if no valid combinations exist
+   - Shows total solution count and computation time
 
-## 技术实现细节
+## Technical Implementation
 
-### 核心算法
+### Core Algorithm
 
-1. **排列生成**：递归生成所有数字排列组合
-2. **运算符组合**：遍历四种基本运算的所有可能
-3. **括号组合**：考虑五种运算优先级组合
-4. **规范化处理**：
-   - 语法树解析
-   - 表达式标准化
-   - 等价性检测
+1. **Permutation Generation**: Recursively generates all number permutations
+2. **Operator Combination**: Tests all four basic arithmetic operations
+3. **Parenthesis Combination**: Considers five operation priority groupings
+4. **Normalization Process**:
+   - Syntax tree parsing
+   - Expression standardization
+   - Equivalence detection
 
-### 关键函数
+### Key Functions
 
-- `solve24(numbers)`：主计算逻辑
-- `canonicalizeTree(node)`：表达式规范化核心
-- `normalizeExpression(expr)`：表达式简化
-- `getCanonicalKey(expr)`：生成唯一标识
+- `solve24(numbers)`: Main calculation logic
+- `makeCanonical(node)`: Core expression normalization
+- `normalizeExpression(expr)`: Expression simplification
+- `getCanonicalForm(expr)`: Generates unique identifiers
 
-## 文件结构
+## File Structure
 
 ```
-24-point-calculator-optimized/
-├── index.html          # 主页面HTML结构
-├── (内嵌CSS样式)        # 响应式界面设计
-└── (内嵌JavaScript)     # 核心计算逻辑与优化算法
+24-point-calculator-ultimate/
+├── index.html          # Main HTML structure
+├── (Embedded CSS)      # Responsive UI design
+└── (Embedded JavaScript) # Core calculation and optimization logic
 ```
 
-## 示例演示
+## Example Demonstration
 
-**输入**：  
-数字：3, 4, 5, 6
+**Input**:  
+Numbers: 2, 3, 4, 5
 
-**输出**：
+**Output**:
 ```
-((3-4+5))*6 = 24
-((3+5-4))*6 = 24
-((3+(5-4)))*6 = 24
-共找到 3 个唯一解，耗时 107.50 毫秒
+Solution：
+((3-2+5))*4 = 24
+((3+5-2))*4 = 24
+2*((3+4+5)) = 24
+((3+(5-2)))*4 = 24
+Found 4 solutions in total , taking 102.50 ms
 ```
 
-## 高级特性
+## Advanced Features
 
-1. **智能括号处理**：
-   - 自动判断括号必要性
-   - 保持运算优先级
+1. **Smart Parenthesis Handling**:
+   - Automatically determines parenthesis necessity
+   - Maintains operation precedence
 
-2. **特殊等价情况处理**：
-   - 识别 a-(b-c) ≡ (a-b)+c
-   - 识别 a/(b/c) ≡ (a×c)/b
+2. **Special Case Equivalence**:
+   - Recognizes a-(b-c) ≡ (a-b)+c
+   - Recognizes a/(b/c) ≡ (a×c)/b
 
-3. **性能监控**：
-   - 实时计算耗时统计
-   - 高效内存管理
+3. **Performance Monitoring**:
+   - Real-time computation statistics
+   - Efficient memory management
 
-## 扩展建议
+## Extension Suggestions
 
-1. 添加难度选择（限制运算符种类）
-2. 实现分步解题演示
-3. 增加游戏计时模式
-4. 添加用户历史记录
+1. Add difficulty levels (limit operator types)
+2. Implement step-by-step solution demonstration
+3. Add timed game mode
+4. Include user history records
+
+## License
+
+This project is licensed under the MIT Open Source License. Feel free to use and modify.
